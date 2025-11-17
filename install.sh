@@ -110,6 +110,8 @@ fi
 mkdir -p "$MOPIDY_HOME"
 chown -R "$MOPIDY_USER:$MOPIDY_GROUP" "$MOPIDY_HOME"
 chown -R "$MOPIDY_USER:$MOPIDY_GROUP" /etc/mopidy
+echo "Adding $MOPIDY_USER to audio group for playback permissions..."
+usermod -a -G audio "$MOPIDY_USER"
 
 echo "Installing systemd service to /etc/systemd/system/mopidy.service..."
 install -m 644 "$SERVICE_SOURCE" "$SERVICE_PATH"
