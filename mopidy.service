@@ -1,11 +1,11 @@
 [Unit]
-Description=Mopidy Music Server (venv)
+Description=Mopidy Music Server
 After=network.target sound.target
 
 [Service]
 User=mopidy
 Group=mopidy
-ExecStart=/opt/mopidy-venv/bin/mopidy --config /etc/mopidy/mopidy.conf
+ExecStart=/usr/bin/env mopidy --config /etc/mopidy/mopidy.conf
 Restart=on-failure
 Environment=PYTHONUNBUFFERED=1
 

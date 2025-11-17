@@ -7,10 +7,10 @@ SERVICE_SOURCE="$SCRIPT_DIR/mopidy.service"
 CONFIG_PATH="/etc/mopidy/mopidy.conf"
 SERVICE_PATH="/etc/systemd/system/mopidy.service"
 SERVICE_NAME="mopidy"
-VENV_PATH="/opt/mopidy-venv"
 MOPIDY_USER="mopidy"
 MOPIDY_GROUP="$MOPIDY_USER"
 MOPIDY_HOME="/home/mopidy"
+PYTHON_BIN="python3"
 
 if [[ ! -f "$CONFIG_SOURCE" || ! -f "$SERVICE_SOURCE" ]]; then
     echo "Required files mopidy.conf or mopidy.service are missing next to install.sh" >&2
@@ -32,7 +32,6 @@ echo "Installing system packages..."
 apt-get install -y \
     python3 \
     python3-pip \
-    python3-venv \
     python3-dev \
     python3-gi \
     python3-gst-1.0 \
@@ -47,25 +46,16 @@ apt-get install -y \
     libgirepository1.0-dev \
     libasound2-dev
 
-if [[ -d "$VENV_PATH" ]]; then
-    echo "Existing Mopidy virtual environment found at ${VENV_PATH}, removing..."
-    rm -rf "$VENV_PATH"
-fi
-
-echo "Creating Mopidy virtual environment at ${VENV_PATH} (with system site packages)..."
-python3 -m venv --system-site-packages "$VENV_PATH"
-
-echo "Installing Mopidy inside venv..."
-"$VENV_PATH/bin/pip" install --upgrade pip
-"$VENV_PATH/bin/pip" install \
+echo "Installing Mopidy into system Python (break-system-packages)..."
+"$PYTHON_BIN" -m pip install --break-system-packages --upgrade pip
+"$PYTHON_BIN" -m pip install --break-system-packages \
     --ignore-installed \
     mopidy==3.* \
     Mopidy-ALSAMixer \
-    Mopidy-TuneIn \
-    PyGObject
+    Mopidy-TuneIn
 
 echo "Applying Mopidy GStreamer mime workaround..."
-SCAN_FILE="$("$VENV_PATH/bin/python3" - <<'PY'
+SCAN_FILE="$("$PYTHON_BIN" - <<'PY'
 import inspect
 import mopidy.audio.scan as scan
 import os
@@ -73,7 +63,7 @@ print(os.path.abspath(inspect.getfile(scan)))
 PY
 )"
 if [[ -n "$SCAN_FILE" && -f "$SCAN_FILE" ]]; then
-    "$VENV_PATH/bin/python3" - "$SCAN_FILE" <<'PY'
+    "$PYTHON_BIN" - "$SCAN_FILE" <<'PY'
 import sys
 from pathlib import Path
 
@@ -89,8 +79,8 @@ else
     echo "Warning: unable to locate mopidy.audio.scan for patching" >&2
 fi
 
-if [[ ! -x "$VENV_PATH/bin/mopidy" ]]; then
-    echo "Mopidy executable missing from ${VENV_PATH}/bin. Installation failed." >&2
+if ! command -v mopidy &>/dev/null; then
+    echo "Mopidy executable missing from PATH. Installation failed." >&2
     exit 1
 fi
 
@@ -116,9 +106,6 @@ chown -R "$MOPIDY_USER:$MOPIDY_GROUP" /etc/mopidy
 echo "Installing systemd service to /etc/systemd/system/mopidy.service..."
 install -m 644 "$SERVICE_SOURCE" "$SERVICE_PATH"
 
-echo "Fixing permissions..."
-chown -R "$MOPIDY_USER:$MOPIDY_GROUP" "$VENV_PATH"
-
 echo "Reloading systemd..."
 systemctl daemon-reload
 
@@ -130,8 +117,7 @@ systemctl start "$SERVICE_NAME"
 
 echo
 echo "======================================================"
-echo " Mopidy is installed in a virtual environment"
-echo " Location: /opt/mopidy-venv"
+echo " Mopidy is installed into the system Python environment"
 echo " Config:   /etc/mopidy/mopidy.conf"
 echo " Service:  systemctl status mopidy"
 echo "======================================================"
