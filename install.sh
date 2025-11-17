@@ -60,7 +60,34 @@ echo "Installing Mopidy inside venv..."
 "$VENV_PATH/bin/pip" install \
     --ignore-installed \
     mopidy==3.* \
-    Mopidy-ALSAMixer
+    Mopidy-ALSAMixer \
+    Mopidy-TuneIn \
+    PyGObject
+
+echo "Applying Mopidy GStreamer mime workaround..."
+SCAN_FILE="$("$VENV_PATH/bin/python3" - <<'PY'
+import inspect
+import mopidy.audio.scan as scan
+import os
+print(os.path.abspath(inspect.getfile(scan)))
+PY
+)"
+if [[ -n "$SCAN_FILE" && -f "$SCAN_FILE" ]]; then
+    "$VENV_PATH/bin/python3" - "$SCAN_FILE" <<'PY'
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+needle = 'mime = msg.get_structure().get_value("caps").get_name()'
+replacement = '    mime = None  # Mopidy Trixie GStreamer workaround'
+text = path.read_text()
+if needle in text and replacement not in text:
+    text = text.replace(needle, replacement, 1)
+    path.write_text(text)
+PY
+else
+    echo "Warning: unable to locate mopidy.audio.scan for patching" >&2
+fi
 
 if [[ ! -x "$VENV_PATH/bin/mopidy" ]]; then
     echo "Mopidy executable missing from ${VENV_PATH}/bin. Installation failed." >&2
