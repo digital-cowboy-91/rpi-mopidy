@@ -60,8 +60,7 @@ echo "Installing Mopidy inside venv..."
 "$VENV_PATH/bin/pip" install \
     --ignore-installed \
     mopidy==3.* \
-    Mopidy-ALSAMixer \
-    Mopidy-TuneIn
+    Mopidy-ALSAMixer
 
 if [[ ! -x "$VENV_PATH/bin/mopidy" ]]; then
     echo "Mopidy executable missing from ${VENV_PATH}/bin. Installation failed." >&2
