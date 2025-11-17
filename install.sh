@@ -55,6 +55,7 @@ python3 -m venv --system-site-packages "$VENV_PATH"
 echo "Installing Mopidy inside venv..."
 "$VENV_PATH/bin/pip" install --upgrade pip
 "$VENV_PATH/bin/pip" install \
+    --ignore-installed \
     mopidy==3.* \
     Mopidy-ALSAMixer \
     Mopidy-TuneIn
