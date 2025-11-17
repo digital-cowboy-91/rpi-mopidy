@@ -4,8 +4,8 @@ set -e
 SERVICE_NAME="mopidy"
 SERVICE_PATH="/etc/systemd/system/${SERVICE_NAME}.service"
 CONFIG_DIR="/etc/mopidy"
-VENV_PATH="/opt/mopidy-venv"
 USER_NAME="mopidy"
+PYTHON_BIN="python3"
 
 echo "Stopping ${SERVICE_NAME} service if running..."
 systemctl stop "${SERVICE_NAME}" 2>/dev/null || true
@@ -27,10 +27,8 @@ if [[ -d "${CONFIG_DIR}" ]]; then
     rm -rf "${CONFIG_DIR}"
 fi
 
-if [[ -d "${VENV_PATH}" ]]; then
-    echo "Removing Mopidy virtual environment ${VENV_PATH}..."
-    rm -rf "${VENV_PATH}"
-fi
+echo "Removing Mopidy Python packages..."
+"$PYTHON_BIN" -m pip uninstall -y Mopidy Mopidy-ALSAMixer Mopidy-TuneIn >/dev/null 2>&1 || true
 
 if id "${USER_NAME}" &>/dev/null; then
     echo "Removing user ${USER_NAME}..."

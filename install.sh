@@ -47,7 +47,6 @@ apt-get install -y \
     libasound2-dev
 
 echo "Installing Mopidy into system Python (break-system-packages)..."
-"$PYTHON_BIN" -m pip install --break-system-packages --upgrade pip
 "$PYTHON_BIN" -m pip install --break-system-packages \
     --ignore-installed \
     mopidy==3.* \
