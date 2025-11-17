@@ -34,8 +34,13 @@ apt-get install -y \
     libgirepository1.0-dev \
     libasound2-dev
 
-echo "Creating Mopidy virtual environment at /opt/mopidy-venv..."
-python3 -m venv /opt/mopidy-venv
+if [[ -d /opt/mopidy-venv ]]; then
+    echo "Existing Mopidy virtual environment found at /opt/mopidy-venv, removing..."
+    rm -rf /opt/mopidy-venv
+fi
+
+echo "Creating Mopidy virtual environment at /opt/mopidy-venv (with system site packages)..."
+python3 -m venv --system-site-packages /opt/mopidy-venv
 
 echo "Installing Mopidy inside venv..."
 /opt/mopidy-venv/bin/pip install --upgrade pip
