@@ -12,6 +12,7 @@ systemctl stop "${SERVICE_NAME}" 2>/dev/null || true
 
 echo "Disabling ${SERVICE_NAME} service..."
 systemctl disable "${SERVICE_NAME}" 2>/dev/null || true
+systemctl reset-failed "${SERVICE_NAME}" 2>/dev/null || true
 
 if [[ -f "${SERVICE_PATH}" ]]; then
     echo "Removing systemd service file ${SERVICE_PATH}..."

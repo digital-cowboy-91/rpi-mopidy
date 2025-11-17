@@ -6,10 +6,20 @@ CONFIG_SOURCE="$SCRIPT_DIR/mopidy.conf"
 SERVICE_SOURCE="$SCRIPT_DIR/mopidy.service"
 CONFIG_PATH="/etc/mopidy/mopidy.conf"
 SERVICE_PATH="/etc/systemd/system/mopidy.service"
+SERVICE_NAME="mopidy"
+VENV_PATH="/opt/mopidy-venv"
 
 if [[ ! -f "$CONFIG_SOURCE" || ! -f "$SERVICE_SOURCE" ]]; then
     echo "Required files mopidy.conf or mopidy.service are missing next to install.sh" >&2
     exit 1
+fi
+
+if systemctl list-unit-files | grep -q "^${SERVICE_NAME}.service"; then
+    echo "Stopping existing ${SERVICE_NAME} service..."
+    systemctl stop "${SERVICE_NAME}" 2>/dev/null || true
+    echo "Disabling existing ${SERVICE_NAME} service..."
+    systemctl disable "${SERVICE_NAME}" 2>/dev/null || true
+    systemctl reset-failed "${SERVICE_NAME}" 2>/dev/null || true
 fi
 
 echo "Updating system..."
@@ -34,20 +44,25 @@ apt-get install -y \
     libgirepository1.0-dev \
     libasound2-dev
 
-if [[ -d /opt/mopidy-venv ]]; then
-    echo "Existing Mopidy virtual environment found at /opt/mopidy-venv, removing..."
-    rm -rf /opt/mopidy-venv
+if [[ -d "$VENV_PATH" ]]; then
+    echo "Existing Mopidy virtual environment found at ${VENV_PATH}, removing..."
+    rm -rf "$VENV_PATH"
 fi
 
-echo "Creating Mopidy virtual environment at /opt/mopidy-venv (with system site packages)..."
-python3 -m venv --system-site-packages /opt/mopidy-venv
+echo "Creating Mopidy virtual environment at ${VENV_PATH} (with system site packages)..."
+python3 -m venv --system-site-packages "$VENV_PATH"
 
 echo "Installing Mopidy inside venv..."
-/opt/mopidy-venv/bin/pip install --upgrade pip
-/opt/mopidy-venv/bin/pip install \
+"$VENV_PATH/bin/pip" install --upgrade pip
+"$VENV_PATH/bin/pip" install \
     mopidy==3.* \
     Mopidy-ALSAMixer \
     Mopidy-TuneIn
+
+if [[ ! -x "$VENV_PATH/bin/mopidy" ]]; then
+    echo "Mopidy executable missing from ${VENV_PATH}/bin. Installation failed." >&2
+    exit 1
+fi
 
 echo "Creating Mopidy config directory..."
 mkdir -p /etc/mopidy
@@ -63,16 +78,16 @@ echo "Installing systemd service to /etc/systemd/system/mopidy.service..."
 install -m 644 "$SERVICE_SOURCE" "$SERVICE_PATH"
 
 echo "Fixing permissions..."
-chown -R mopidy:mopidy /opt/mopidy-venv
+chown -R mopidy:mopidy "$VENV_PATH"
 
 echo "Reloading systemd..."
 systemctl daemon-reload
 
 echo "Enabling Mopidy service..."
-systemctl enable mopidy
+systemctl enable "$SERVICE_NAME"
 
 echo "Starting Mopidy service..."
-systemctl start mopidy
+systemctl start "$SERVICE_NAME"
 
 echo
 echo "======================================================"
