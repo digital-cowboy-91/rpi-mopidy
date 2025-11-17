@@ -68,11 +68,20 @@ from pathlib import Path
 
 path = Path(sys.argv[1])
 needle = 'mime = msg.get_structure().get_value("caps").get_name()'
-replacement = '    mime = None  # Mopidy Trixie GStreamer workaround'
+replacement_suffix = 'mime = None  # Mopidy Trixie GStreamer workaround'
 text = path.read_text()
-if needle in text and replacement not in text:
-    text = text.replace(needle, replacement, 1)
-    path.write_text(text)
+if needle in text and replacement_suffix not in text:
+    lines = text.splitlines()
+    replaced = False
+    for idx, line in enumerate(lines):
+        if needle in line:
+            indent = line[: len(line) - len(line.lstrip())]
+            lines[idx] = f"{indent}{replacement_suffix}"
+            replaced = True
+            break
+    if replaced:
+        newline = "\n" if text.endswith("\n") else ""
+        path.write_text("\n".join(lines) + newline)
 PY
 else
     echo "Warning: unable to locate mopidy.audio.scan for patching" >&2
