@@ -8,6 +8,9 @@ CONFIG_PATH="/etc/mopidy/mopidy.conf"
 SERVICE_PATH="/etc/systemd/system/mopidy.service"
 SERVICE_NAME="mopidy"
 VENV_PATH="/opt/mopidy-venv"
+MOPIDY_USER="mopidy"
+MOPIDY_GROUP="$MOPIDY_USER"
+MOPIDY_HOME="/home/mopidy"
 
 if [[ ! -f "$CONFIG_SOURCE" || ! -f "$SERVICE_SOURCE" ]]; then
     echo "Required files mopidy.conf or mopidy.service are missing next to install.sh" >&2
@@ -71,15 +74,24 @@ mkdir -p /etc/mopidy
 echo "Installing Mopidy config to /etc/mopidy/mopidy.conf..."
 install -m 644 "$CONFIG_SOURCE" "$CONFIG_PATH"
 
-echo "Creating mopidy user..."
-id mopidy &>/dev/null || useradd -r -s /bin/false mopidy
-chown -R mopidy:mopidy /etc/mopidy
+echo "Ensuring mopidy user exists and has a writable home..."
+if id "$MOPIDY_USER" &>/dev/null; then
+    current_home="$(getent passwd "$MOPIDY_USER" | cut -d: -f6)"
+    if [[ "$current_home" != "$MOPIDY_HOME" && -n "$current_home" ]]; then
+        usermod -d "$MOPIDY_HOME" "$MOPIDY_USER"
+    fi
+else
+    useradd -r -m -d "$MOPIDY_HOME" -s /bin/false "$MOPIDY_USER"
+fi
+mkdir -p "$MOPIDY_HOME"
+chown -R "$MOPIDY_USER:$MOPIDY_GROUP" "$MOPIDY_HOME"
+chown -R "$MOPIDY_USER:$MOPIDY_GROUP" /etc/mopidy
 
 echo "Installing systemd service to /etc/systemd/system/mopidy.service..."
 install -m 644 "$SERVICE_SOURCE" "$SERVICE_PATH"
 
 echo "Fixing permissions..."
-chown -R mopidy:mopidy "$VENV_PATH"
+chown -R "$MOPIDY_USER:$MOPIDY_GROUP" "$VENV_PATH"
 
 echo "Reloading systemd..."
 systemctl daemon-reload
