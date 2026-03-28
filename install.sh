@@ -4,16 +4,18 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_SOURCE="$SCRIPT_DIR/mopidy.conf"
 SERVICE_SOURCE="$SCRIPT_DIR/mopidy.service"
+ASOUND_SOURCE="$SCRIPT_DIR/asound.conf"
 CONFIG_PATH="/etc/mopidy/mopidy.conf"
 SERVICE_PATH="/etc/systemd/system/mopidy.service"
+ASOUND_PATH="/etc/asound.conf"
 SERVICE_NAME="mopidy"
 MOPIDY_USER="mopidy"
 MOPIDY_GROUP="$MOPIDY_USER"
 MOPIDY_HOME="/home/mopidy"
 PYTHON_BIN="python3"
 
-if [[ ! -f "$CONFIG_SOURCE" || ! -f "$SERVICE_SOURCE" ]]; then
-    echo "Required files mopidy.conf or mopidy.service are missing next to install.sh" >&2
+if [[ ! -f "$CONFIG_SOURCE" || ! -f "$SERVICE_SOURCE" || ! -f "$ASOUND_SOURCE" ]]; then
+    echo "Required files mopidy.conf, mopidy.service, or asound.conf are missing next to install.sh" >&2
     exit 1
 fi
 
@@ -95,6 +97,9 @@ fi
 echo "Creating Mopidy config directory..."
 mkdir -p /etc/mopidy
 
+echo "Installing ALSA config to /etc/asound.conf..."
+install -m 644 "$ASOUND_SOURCE" "$ASOUND_PATH"
+
 echo "Installing Mopidy config to /etc/mopidy/mopidy.conf..."
 install -m 644 "$CONFIG_SOURCE" "$CONFIG_PATH"
 
@@ -128,9 +133,9 @@ systemctl start "$SERVICE_NAME"
 echo
 echo "======================================================"
 echo " Mopidy is installed into the system Python environment"
+echo " ALSA:     /etc/asound.conf"
 echo " Config:   /etc/mopidy/mopidy.conf"
 echo " Service:  systemctl status mopidy"
 echo "======================================================"
 echo
 echo "Mopidy now starts automatically on boot."
-echo "If USB audio is not card 1, update: /etc/mopidy/mopidy.conf"

@@ -4,6 +4,7 @@ set -e
 SERVICE_NAME="mopidy"
 SERVICE_PATH="/etc/systemd/system/${SERVICE_NAME}.service"
 CONFIG_DIR="/etc/mopidy"
+ASOUND_PATH="/etc/asound.conf"
 USER_NAME="mopidy"
 PYTHON_BIN="python3"
 
@@ -25,6 +26,11 @@ systemctl daemon-reload
 if [[ -d "${CONFIG_DIR}" ]]; then
     echo "Removing Mopidy configuration directory ${CONFIG_DIR}..."
     rm -rf "${CONFIG_DIR}"
+fi
+
+if [[ -f "${ASOUND_PATH}" ]]; then
+    echo "Removing ALSA config ${ASOUND_PATH}..."
+    rm -f "${ASOUND_PATH}"
 fi
 
 echo "Removing Mopidy Python packages..."
